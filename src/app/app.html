@@ -1,0 +1,83 @@
+<ng-template #kicker let-item>
+  <div class="kicker">
+    @if (sourceOf(item.source); as s) {
+      <span class="badge" [style.background]="s.color">{{ s.name }}</span>
+    }
+    @if (item.category) {
+      <span class="cat">{{ item.category }}</span>
+    }
+    @if (item.published) {
+      <time [attr.datetime]="item.published" [title]="formatDate(item.published)">{{ timeAgo(item.published) }}</time>
+    }
+  </div>
+</ng-template>
+
+<div class="page">
+  <header class="masthead">
+    <div class="dateline">
+      <span>{{ today }}</span>
+      <span>{{ news.feed() ? 'Mis à jour ' + timeAgo(news.feed()!.fetchedAt) : 'Chargement…' }}</span>
+    </div>
+    <h1>Le Fil<span>.</span></h1>
+    <p class="tagline">L’actualité de BFMTV en continu</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="chips">
+      <button class="chip" [class.active]="!category()" (click)="category.set(null)">Toutes les rubriques</button>
+      @for (c of categories(); track c) {
+        <button class="chip" [class.active]="category() === c" (click)="category.set(c)">{{ c }}</button>
+      }
+    </div>
+    <input class="search" type="search" placeholder="Rechercher…" [value]="query()" (input)="onSearch($event)" />
+    <button class="refresh" (click)="news.load()" [disabled]="news.loading()" title="Recharger">↻</button>
+  </div>
+
+  @if (!news.feed() && news.loading()) {
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+    <div class="skeleton"></div>
+  }
+  @if (!news.feed() && news.error()) {
+    <p class="error">
+      Impossible de charger les actualités ({{ news.error() }}). En local, lancez d’abord <code>npm run fetch-news</code>.
+    </p>
+  }
+
+  @if (hero(); as h) {
+    <a class="hero" [href]="h.link" target="_blank" rel="noopener noreferrer">
+      <app-thumb [src]="h.image" [source]="sourceOf(h.source)" />
+      <div>
+        <span class="label">À la une</span>
+        <ng-container *ngTemplateOutlet="kicker; context: { $implicit: h }" />
+        <h2>{{ h.title }}</h2>
+        @if (h.summary) {
+          <p>{{ h.summary }}</p>
+        }
+      </div>
+    </a>
+  }
+
+  <section class="grid">
+    @for (item of rest(); track item.link) {
+      <a class="story" [href]="item.link" target="_blank" rel="noopener noreferrer">
+        <div class="media"><app-thumb [src]="item.image" [source]="sourceOf(item.source)" /></div>
+        <div>
+          <ng-container *ngTemplateOutlet="kicker; context: { $implicit: item }" />
+          <h3>{{ item.title }}</h3>
+          @if (item.summary) {
+            <p>{{ item.summary }}</p>
+          }
+        </div>
+      </a>
+    }
+  </section>
+
+  @if (news.feed() && items().length === 0) {
+    <p class="empty">Aucun article ne correspond à votre recherche.</p>
+  }
+
+  <footer>
+    Source : <a href="https://www.bfmtv.com">BFMTV</a>. Les contenus appartiennent à leur éditeur ; chaque article renvoie vers le site d’origine.
+  </footer>
+</div>
